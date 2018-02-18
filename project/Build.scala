@@ -14,7 +14,7 @@ object SlickBuild extends Build {
 
   val slickVersion = "3.3.0-SNAPSHOT"
   val binaryCompatSlickVersion = "3.3.0" // Slick base version for binary compatibility checks
-  val scalaVersions = Seq("2.11.8", "2.12.4")
+  val scalaVersions = Seq("2.11.8", "2.12.4", "2.13.0-M3")
 
   /** Dependencies for reuse in different parts of the build */
   object Dependencies {
@@ -23,7 +23,7 @@ object SlickBuild extends Build {
       "com.novocode" % "junit-interface" % "0.11"
     )
     def scalaTestFor(scalaVersion: String) = {
-      val v = "3.0.0"
+      val v = "3.0.5-M1"
       "org.scalatest" %% "scalatest" % v
     }
     val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
