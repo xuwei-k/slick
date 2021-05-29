@@ -74,7 +74,7 @@ object Settings {
         ),
         ivyConfigurations += MacroConfig.hide.extend(Compile),
         Compile / unmanagedClasspath  ++= (MacroConfig / products).value,
-        libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+        libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.13.6" % "provided",
         (Compile / packageSrc / mappings) ++= (MacroConfig / packageSrc / mappings).value,
         (Compile / packageBin / mappings) ++= (MacroConfig / packageBin / mappings).value,
       )
@@ -248,6 +248,7 @@ object Settings {
           Nil
       }
     },
+    scalacOptions ++= Seq("-source", "3.0-migration"),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-title", name.value,
       "-doc-version", version.value,
@@ -263,11 +264,11 @@ object Settings {
   // set the scala-compiler dependency unless a local scala is in use
   def compilerDependencySetting(config: String) =
     if (sys.props("scala.home.local") != null) Nil else Seq(
-      libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % config
+      libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.13.6" % config
     )
 
   def publishedScalaSettings = Seq(
-    scalaVersion := Dependencies.scalaVersions.tail.head,
+    scalaVersion := "3.0.0",
     crossScalaVersions := Dependencies.scalaVersions
   )
 
