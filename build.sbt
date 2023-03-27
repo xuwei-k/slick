@@ -1,3 +1,4 @@
+import CompatReportPlugin.autoImport.compatReportMarkdown
 import com.jsuereth.sbtpgp.PgpKeys
 
 
@@ -5,6 +6,8 @@ val testAll = taskKey[Unit]("Run all tests")
 
 val cleanCompileTimeTests =
   taskKey[Unit]("Delete files used for compile-time tests which should be recompiled every time.")
+
+val repoKind = settingKey[String]("""Maven repository kind ("snapshots" or "releases")""")
 
 /* Test Configuration for running tests on doc sources */
 val DocTest = config("doctest").extend(Test)
@@ -33,16 +36,7 @@ inThisBuild(
         Developer("szeiger", "Stefan Zeiger", "", url("http://szeiger.de")),
         Developer("hvesalai", "Heikki Vesalainen", "", url("https://github.com/hvesalai/"))
       ),
-    scmInfo := Some(ScmInfo(url("https://github.com/slick/slick"), "scm:git:git@github.com:slick/slick.git")),
-    scalacOptions ++=
-      List(
-        "-deprecation",
-        "-feature",
-        "-unchecked",
-        "-Xsource:3",
-        "-Wunused:imports",
-        "-Wconf:cat=unused-imports&src=src_managed/.*:silent"
-      )
+    scmInfo := Some(ScmInfo(url("https://github.com/slick/slick"), "scm:git:git@github.com:slick/slick.git"))
   )
 )
 
@@ -57,12 +51,25 @@ def scaladocSourceUrl(dir: String) =
 
 def slickGeneralSettings =
   Seq(
+    repoKind := (if (version.value.trim.endsWith("SNAPSHOT")) "snapshots" else "releases"),
+    publishTo :=
+      (repoKind.value match {
+        case "snapshots" => Some("snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
+        case "releases"  => Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+      }),
+    publishMavenStyle := true,
     Test / publishArtifact := false,
     pomIncludeRepository := { _ => false },
     makePomConfiguration ~= {
       _.withConfigurations(Vector(Compile, Runtime, Optional))
     },
     sonatypeProfileName := "com.typesafe.slick",
+    scalacOptions ++=
+      List("-deprecation", "-feature", "-unchecked") ++
+        (if (scalaVersion.value.startsWith("2."))
+          List("-Xsource:3", "-Wunused:imports", "-Wconf:cat=unused-imports&src=src_managed/.*:silent")
+        else
+          List("-source:3.0-migration")),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-title", name.value,
       "-doc-version", version.value,
@@ -72,13 +79,18 @@ def slickGeneralSettings =
       "-diagrams", // requires graphviz
       "-groups"
     ),
+    scaladocSourceUrl("slick"),
     logBuffered := false
   )
 
-// set the scala-compiler dependency unless a local scala is in use
+// add a scala 2 compiler dependency unless a local scala is in use
 def compilerDependencySetting(config: String) =
   if (sys.props("scala.home.local") != null) Nil else Seq(
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % config
+    libraryDependencies ++= (if (scalaVersion.value.startsWith("2."))
+      Seq("org.scala-lang" % "scala-compiler" % scalaVersion.value % config,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value % config)
+    else
+      Seq("org.scala-lang" % "scala3-compiler_3" % scalaVersion.value % config))
   )
 
 def extTarget(extName: String): Seq[Setting[File]] =
@@ -128,6 +140,9 @@ lazy val slick =
       name := "Slick",
       description := "Scala Language-Integrated Connection Kit",
       libraryDependencies ++= Dependencies.mainDependencies,
+      libraryDependencies ++=
+        (if (scalaVersion.value.startsWith("2.")) Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)
+        else Nil),
       scaladocSourceUrl("slick"),
       Compile / doc / scalacOptions ++= Seq(
         "-doc-root-content", "scaladoc-root.txt"
@@ -333,9 +348,22 @@ lazy val root =
       versionPolicyPreviousVersions := Nil,
       PgpKeys.publishSigned := {},
       PgpKeys.publishLocalSigned := {},
+      sourceDirectory := file(target.value + "/root-src"),
       // suppress test status output
       test := {},
       testOnly := {},
+      testAll := {
+        Def.sequential(
+          testkit / Test / test,
+          testkit / DocTest / test,
+          `reactive-streams-tests` / Test / test,
+          slick / Compile / packageDoc,
+          codegen / Compile / packageDoc,
+          hikaricp / Compile / packageDoc,
+          testkit / Compile / packageDoc,
+          slick / Compile / mimaReportBinaryIssues // enable for minor versions
+        ).value
+      },
       testAll := {
         Def.sequential(
           testkit / Test / test,

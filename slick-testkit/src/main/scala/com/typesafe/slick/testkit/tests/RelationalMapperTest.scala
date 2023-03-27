@@ -1,7 +1,5 @@
 package com.typesafe.slick.testkit.tests
 
-import scala.language.existentials
-
 import com.typesafe.slick.testkit.util.{AsyncTest, RelationalTestDB}
 
 class RelationalMapperTest extends AsyncTest[RelationalTestDB] {
@@ -12,7 +10,7 @@ class RelationalMapperTest extends AsyncTest[RelationalTestDB] {
     case object True extends Bool
     case object False extends Bool
 
-    implicit val boolTypeMapper = MappedColumnType.base[Bool, Int](
+    implicit val boolTypeMapper: BaseColumnType[Bool] = MappedColumnType.base[Bool, Int](
       { b =>
         b shouldNotBe null
         if(b == True) 1 else 0
@@ -45,7 +43,7 @@ class RelationalMapperTest extends AsyncTest[RelationalTestDB] {
     case object EnumValue2 extends EnumType
     case object EnumValue3 extends EnumType
 
-    implicit val enumTypeMapper = MappedColumnType.base[EnumType, Char](
+    implicit val enumTypeMapper: BaseColumnType[EnumType] = MappedColumnType.base[EnumType, Char](
       { t =>
         t shouldNotBe null
         t match {
@@ -85,7 +83,7 @@ class RelationalMapperTest extends AsyncTest[RelationalTestDB] {
     case object True extends Bool
     case object False extends Bool
 
-    implicit val boolTypeMapper = MappedColumnType.base[Bool, String](
+    implicit val boolTypeMapper: BaseColumnType[Bool] = MappedColumnType.base[Bool, String](
       { b =>
         b shouldNotBe null
         if(b == True) "y" else "n"

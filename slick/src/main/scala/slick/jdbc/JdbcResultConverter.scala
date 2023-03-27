@@ -10,7 +10,7 @@ import slick.SlickException
 class BaseResultConverter[T](val ti: JdbcType[T],
                                                                                                 val name: String,
                                                                                                 val idx: Int)
-  extends ResultConverter[JdbcResultConverterDomain, T] {
+  extends ResultConverter[ResultSet, PreparedStatement, ResultSet, T] {
   def read(pr: ResultSet) = {
     val v = ti.getValue(pr, idx)
     if(ti.wasNull(pr, idx)) throw new SlickException("Read NULL value for ResultSet column "+name)
@@ -28,7 +28,7 @@ class BaseResultConverter[T](val ti: JdbcType[T],
  * Boxing is avoided when the result is `None`. */
 class OptionResultConverter[T](val ti: JdbcType[T],
                                                                                                   val idx: Int)
-  extends ResultConverter[JdbcResultConverterDomain, Option[T]] {
+  extends ResultConverter[ResultSet, PreparedStatement, ResultSet, Option[T]] {
   def read(pr: ResultSet) = {
     val v = ti.getValue(pr, idx)
     if(ti.wasNull(pr, idx)) None else Some(v)
@@ -47,8 +47,8 @@ class OptionResultConverter[T](val ti: JdbcType[T],
     if(ti.scalaType.isPrimitive) new DefaultingResultConverter[T](ti, default, idx)
     else new DefaultingResultConverter[T](ti, default, idx) {
       override def read(pr: ResultSet) = {
-        val v = ti.getValue(pr, idx)
-        if(v.asInstanceOf[AnyRef] eq null) default() else v
+        val v = this.ti.getValue(pr, this.idx)
+        if(v.asInstanceOf[AnyRef] eq null) this.default() else v
       }
     }
   def isDefined = new IsDefinedResultConverter[T](ti, idx)
@@ -57,7 +57,7 @@ class OptionResultConverter[T](val ti: JdbcType[T],
 /** Specialized JDBC ResultConverter for handling non-`Option` values with a default.
  * A (possibly specialized) function for the default value is used to translate SQL `NULL` values. */
 class DefaultingResultConverter[
-  T](val ti: JdbcType[T], val default: () => T, val idx: Int) extends ResultConverter[JdbcResultConverterDomain, T] {
+  T](val ti: JdbcType[T], val default: () => T, val idx: Int) extends ResultConverter[ResultSet, PreparedStatement, ResultSet, T] {
   def read(pr: ResultSet) = {
     val v = ti.getValue(pr, idx)
     if (ti.wasNull(pr, idx)) default() else v
@@ -79,7 +79,7 @@ class DefaultingResultConverter[
 
 /** Specialized JDBC ResultConverter for handling `isDefined` checks for `Option` values. */
 class IsDefinedResultConverter[
-  T](val ti: JdbcType[T], val idx: Int) extends ResultConverter[JdbcResultConverterDomain, Boolean] {
+  T](val ti: JdbcType[T], val idx: Int) extends ResultConverter[ResultSet, PreparedStatement, ResultSet, Boolean] {
   def read(pr: ResultSet) = {
     ti.getValue(pr, idx)
     !ti.wasNull(pr, idx)
