@@ -262,6 +262,14 @@ lazy val testkit =
           .map(_ => file)
           .get
       },
+      DocTest / scalacOptions ++= {
+        scalaBinaryVersion.value match {
+          case "2.13" =>
+            Seq("-Wconf:cat=scala3-migration:warning")
+          case _ =>
+            Nil
+        }
+      },
       DocTest / unmanagedSourceDirectories += docDir.value / "code",
       DocTest / unmanagedResourceDirectories += docDir.value / "code",
       DocTest / parallelExecution := false
