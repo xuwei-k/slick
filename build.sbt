@@ -65,6 +65,7 @@ val scala2InlineSettings = Def.setting {
 def slickScalacOptions = Seq(
   scalacOptions ++=
     List(
+      "-experimental",
       "-deprecation",
       "-feature",
       "-unchecked",
@@ -130,7 +131,7 @@ def sampleSettings = Seq(
 )
 
 ThisBuild / crossScalaVersions := Dependencies.scalaVersions
-ThisBuild / scalaVersion := Dependencies.scala213
+ThisBuild / scalaVersion := "3.6.4"
 
 ThisBuild / versionScheme := Some("pvp")
 

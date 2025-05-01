@@ -44,10 +44,30 @@ object TableQuery {
     val mt = MethodType(List("tag"))(_ => List(tagTpe), _ => eTpe)
 
     val cons = Lambda(Symbol.spliceOwner, mt, { (meth, tag) =>
-      Select.overloaded(New(TypeIdent(eTpe.typeSymbol)), "<init>",
-        List(),
-        List(tag.head.asInstanceOf[Term])
-      )
+      if (eTpe.typeSymbol.typeRef =:= eTpe) {
+        Select.overloaded(New(TypeIdent(eTpe.typeSymbol)), "<init>",
+          List(),
+          List(tag.head.asInstanceOf[Term])
+        )
+      } else {
+        val alias = Symbol.newTypeAlias(
+          Symbol.spliceOwner,
+          Symbol.freshName("X"),
+          Flags.EmptyFlags,
+          eTpe,
+          Symbol.spliceOwner,
+        )
+
+        Block(
+          List(
+            TypeDef(alias)
+          ),
+          Select.overloaded(New(TypeIdent(alias)), "<init>",
+            List(),
+            List(tag.head.asInstanceOf[Term])
+          )
+        )
+      }
     })
 
     val ctorExpr = cons.asExprOf[Tag => E]
